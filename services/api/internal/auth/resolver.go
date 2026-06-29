@@ -84,11 +84,14 @@ func (a Resolver) jwt(raw string) (models.Scope, error) {
 	if workspace == "" {
 		workspace = c.WorkspaceIDAlt
 	}
+	// Current Agumbe user sessions are tenant-scoped and may not carry an app/workspace claim.
+	// Use an explicit, deterministic tenant namespace rather than a shared or fake workspace.
+	if workspace == "" && tenant != "" { workspace = "tenant:" + tenant }
 	user := c.UserID
 	if user == "" {
 		user = c.Subject
 	}
-	if tenant == "" || workspace == "" || user == "" {
+	if tenant == "" || user == "" {
 		return models.Scope{}, errors.New("JWT missing tenant, workspace, or subject")
 	}
 	if c.Expires > 0 && time.Now().Unix() >= c.Expires {
