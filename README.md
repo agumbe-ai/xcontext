@@ -33,6 +33,38 @@ curl -sS http://localhost:8080/xcontext/v1/objects \
 
 See [architecture](docs/architecture.md), [security](SECURITY.md), and [roadmap](docs/roadmap.md).
 
+## MCP interception
+
+Build `xcontext-mcp` and configure an API key carrying `ingest`, `read`, `retrieve`, and `intercept` scopes:
+
+```json
+{
+  "mcpServers": {
+    "xcontext": {
+      "command": "xcontext-mcp",
+      "env": {
+        "AGUMBE_XCONTEXT_API_URL": "https://api.agumbe.ai/xcontext/v1",
+        "AGUMBE_XCONTEXT_API_KEY": "xctx_live_..."
+      }
+    }
+  }
+}
+```
+
+`xcontext_execute` accepts an argv array and never invokes a shell. Full command output is ingested and kept out of model context; the tool returns a compressed summary and context reference. Delivered savings are accepted by the API only when the authenticating key has the `intercept` scope.
+
+## Production configuration
+
+Production requires PostgreSQL and an Agumbe-compatible HS256 JWT secret. Startup fails closed without both. Migrations are embedded in the service image and run at startup by default.
+
+Release publication uses GitHub OIDC, produces an SBOM and provenance attestation, pins the immutable image digest, and opens a promotion PR in `manifests-index`. Configure repository environments and these secrets:
+
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`
+- `GCP_SERVICE_ACCOUNT`
+- `GKE_PROJECT`
+- `GKE_REGION`
+- `MANIFESTS_REPO_TOKEN`
+
 ## License
 
 Apache-2.0.

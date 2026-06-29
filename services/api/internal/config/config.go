@@ -9,20 +9,25 @@ import (
 
 type Config struct {
 	Port, BasePath, StoreRawMode, ConsoleURL string
+	DatabaseURL, JWTSecret                   string
 	CostPer1K                                float64
 	MaxInputBytes, MaxSummaryTokens          int
 	DevAuth                                  bool
 	DevTrustedInterceptor                    bool
 	DevTenantID, DevWorkspaceID, DevUserID   string
+	MigrateOnStart                           bool
 }
 
 func Load() (Config, error) {
-	c := Config{Port: get("XCONTEXT_PORT", "8080"), BasePath: get("XCONTEXT_API_BASE_PATH", "/xcontext/v1"), StoreRawMode: get("XCONTEXT_STORE_RAW_MODE", "redacted"), ConsoleURL: get("XCONTEXT_CONSOLE_URL", "https://console.agumbe.ai/xcontext"), CostPer1K: getFloat("XCONTEXT_ESTIMATED_COST_PER_1K_TOKENS", .01), MaxInputBytes: getInt("XCONTEXT_MAX_INPUT_BYTES", 10<<20), MaxSummaryTokens: getInt("XCONTEXT_MAX_SUMMARY_TOKENS", 1200), DevAuth: strings.EqualFold(os.Getenv("XCONTEXT_DEV_AUTH_ENABLED"), "true"), DevTrustedInterceptor: strings.EqualFold(os.Getenv("XCONTEXT_DEV_TRUSTED_INTERCEPTOR"), "true"), DevTenantID: os.Getenv("XCONTEXT_DEV_TENANT_ID"), DevWorkspaceID: os.Getenv("XCONTEXT_DEV_WORKSPACE_ID"), DevUserID: os.Getenv("XCONTEXT_DEV_USER_ID")}
+	c := Config{Port: get("XCONTEXT_PORT", "8080"), BasePath: get("XCONTEXT_API_BASE_PATH", "/xcontext/v1"), StoreRawMode: get("XCONTEXT_STORE_RAW_MODE", "redacted"), ConsoleURL: get("XCONTEXT_CONSOLE_URL", "https://console.agumbe.ai/xcontext"), DatabaseURL: os.Getenv("XCONTEXT_DATABASE_URL"), JWTSecret: os.Getenv("XCONTEXT_JWT_SECRET"), CostPer1K: getFloat("XCONTEXT_ESTIMATED_COST_PER_1K_TOKENS", .01), MaxInputBytes: getInt("XCONTEXT_MAX_INPUT_BYTES", 10<<20), MaxSummaryTokens: getInt("XCONTEXT_MAX_SUMMARY_TOKENS", 1200), DevAuth: strings.EqualFold(os.Getenv("XCONTEXT_DEV_AUTH_ENABLED"), "true"), DevTrustedInterceptor: strings.EqualFold(os.Getenv("XCONTEXT_DEV_TRUSTED_INTERCEPTOR"), "true"), DevTenantID: os.Getenv("XCONTEXT_DEV_TENANT_ID"), DevWorkspaceID: os.Getenv("XCONTEXT_DEV_WORKSPACE_ID"), DevUserID: os.Getenv("XCONTEXT_DEV_USER_ID"), MigrateOnStart: strings.EqualFold(get("XCONTEXT_MIGRATE_ON_START", "true"), "true")}
 	if c.StoreRawMode != "redacted" && c.StoreRawMode != "original" && c.StoreRawMode != "none" {
 		return c, fmt.Errorf("invalid XCONTEXT_STORE_RAW_MODE")
 	}
 	if c.DevAuth && (c.DevTenantID == "" || c.DevWorkspaceID == "") {
 		return c, fmt.Errorf("dev auth requires tenant and workspace IDs")
+	}
+	if !c.DevAuth && (c.DatabaseURL == "" || c.JWTSecret == "") {
+		return c, fmt.Errorf("production requires XCONTEXT_DATABASE_URL and XCONTEXT_JWT_SECRET")
 	}
 	return c, nil
 }

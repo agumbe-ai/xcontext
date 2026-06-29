@@ -61,3 +61,22 @@ func TestTenantIsolation(t *testing.T) {
 		t.Fatal("cross-tenant retrieval succeeded")
 	}
 }
+
+func TestAPIKeyIsReturnedOnceAndCanBeRevoked(t *testing.T) {
+	s := New(store.NewMemory(), Config{})
+	scope := models.Scope{TenantID: "t", WorkspaceID: "w", UserID: "u"}
+	created, e := s.CreateAPIKey(scope, "ci", "live", []string{"ingest"})
+	if e != nil {
+		t.Fatal(e)
+	}
+	if !strings.HasPrefix(created.Key, "xctx_live_") {
+		t.Fatal(created.Key)
+	}
+	listed := s.APIKeys(scope)
+	if len(listed) != 1 || listed[0].KeyHash != "" {
+		t.Fatalf("listed: %+v", listed)
+	}
+	if e = s.RevokeAPIKey(scope, created.ID); e != nil {
+		t.Fatal(e)
+	}
+}

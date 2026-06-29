@@ -73,6 +73,45 @@ type IngestResponse struct {
 	ConsoleURL         string          `json:"consoleUrl"`
 }
 
+type CreatedAPIKey struct {
+	models.APIKey
+	Key string `json:"key"`
+}
+
+func (s *Service) CreateAPIKey(scope models.Scope, name, environment string, scopes []string) (CreatedAPIKey, error) {
+	if strings.TrimSpace(name) == "" {
+		return CreatedAPIKey{}, fmt.Errorf("name is required")
+	}
+	if environment != "test" && environment != "live" {
+		return CreatedAPIKey{}, fmt.Errorf("environment must be live or test")
+	}
+	allowed := map[string]bool{"ingest": true, "read": true, "retrieve": true, "admin": true, "intercept": true}
+	for _, v := range scopes {
+		if !allowed[v] {
+			return CreatedAPIKey{}, fmt.Errorf("invalid scope %q", v)
+		}
+	}
+	if len(scopes) == 0 {
+		scopes = []string{"ingest", "read"}
+	}
+	secret := make([]byte, 24)
+	if _, e := rand.Read(secret); e != nil {
+		return CreatedAPIKey{}, e
+	}
+	raw := "xctx_" + environment + "_" + hex.EncodeToString(secret)
+	sum := sha256.Sum256([]byte(raw))
+	now := s.now().UTC()
+	v := models.APIKey{ID: id("ctxk_"), TenantID: scope.TenantID, WorkspaceID: scope.WorkspaceID, Name: name, KeyHash: hex.EncodeToString(sum[:]), Prefix: raw[:min(len(raw), 18)] + "...", Scopes: scopes, CreatedBy: scope.UserID, CreatedAt: now, Status: "active"}
+	if e := s.store.CreateAPIKey(v); e != nil {
+		return CreatedAPIKey{}, e
+	}
+	return CreatedAPIKey{APIKey: v, Key: raw}, nil
+}
+func (s *Service) APIKeys(scope models.Scope) []models.APIKey { return s.store.ListAPIKeys(scope) }
+func (s *Service) RevokeAPIKey(scope models.Scope, id string) error {
+	return s.store.RevokeAPIKey(scope, id)
+}
+
 func id(prefix string) string {
 	b := make([]byte, 10)
 	_, _ = rand.Read(b)
@@ -106,6 +145,7 @@ func (s *Service) Ingest(scope models.Scope, r IngestRequest) (IngestResponse, e
 	sessionID := r.SessionID
 	var session models.Session
 	var err error
+	isNewSession := sessionID == ""
 	if sessionID != "" {
 		session, err = s.store.GetSession(scope, sessionID)
 		if err != nil {
@@ -121,9 +161,6 @@ func (s *Service) Ingest(scope models.Scope, r IngestRequest) (IngestResponse, e
 			name = "xcontext session"
 		}
 		session = models.Session{ID: sessionID, Scope: scope, Name: name, Source: r.Source, Agent: r.Agent, Repo: r.Repo, Branch: r.Branch, Provider: r.Provider, Status: "active", CreatedAt: now, UpdatedAt: now}
-		if err = s.store.CreateSession(session); err != nil {
-			return IngestResponse{}, err
-		}
 	}
 	redacted, findings := s.redactor.Redact(r.Text)
 	result := compression.For(r.ContentType).Compress(redacted, s.cfg.MaxSummaryTokens)
@@ -146,11 +183,6 @@ func (s *Service) Ingest(scope models.Scope, r IngestRequest) (IngestResponse, e
 		types = append(types, f.Type)
 		reds = append(reds, models.Redaction{ID: id("ctxr_"), TenantID: scope.TenantID, WorkspaceID: scope.WorkspaceID, SessionID: sessionID, ObjectID: objectID, Type: f.Type, Source: r.Source, ContentType: r.ContentType, Count: f.Count, CreatedAt: now})
 	}
-	if err = s.store.CreateObject(obj); err != nil {
-		return IngestResponse{}, err
-	}
-	_ = s.store.AddRedactions(reds)
-	_ = s.store.AddEvent(models.UsageEvent{ID: id("ctxu_"), TenantID: scope.TenantID, WorkspaceID: scope.WorkspaceID, SessionID: sessionID, ObjectID: objectID, EventType: "object_ingested", TokenOriginal: sum.TokenOriginal, TokenReturned: sum.TokenReturned, TokenSaved: sum.TokenSaved, DeliveredTokensSaved: sum.DeliveredTokensSaved, Metadata: map[string]any{"compressionVersion": result.Version, "deliveryVerified": deliveryVerified}, CreatedAt: now})
 	session.TokenOriginal += sum.TokenOriginal
 	session.TokenReturned += sum.TokenReturned
 	session.TokenSaved += sum.TokenSaved
@@ -161,7 +193,10 @@ func (s *Service) Ingest(scope models.Scope, r IngestRequest) (IngestResponse, e
 	if session.TokenOriginal > 0 {
 		session.ReductionPercent = float64(session.TokenSaved) * 100 / float64(session.TokenOriginal)
 	}
-	_ = s.store.UpdateSession(session)
+	event := models.UsageEvent{ID: id("ctxu_"), TenantID: scope.TenantID, WorkspaceID: scope.WorkspaceID, SessionID: sessionID, ObjectID: objectID, EventType: "object_ingested", TokenOriginal: sum.TokenOriginal, TokenReturned: sum.TokenReturned, TokenSaved: sum.TokenSaved, DeliveredTokensSaved: sum.DeliveredTokensSaved, Metadata: map[string]any{"compressionVersion": result.Version, "deliveryVerified": deliveryVerified}, CreatedAt: now}
+	if err = s.store.CommitIngest(session, isNewSession, obj, reds, event); err != nil {
+		return IngestResponse{}, err
+	}
 	resp := IngestResponse{SessionID: sessionID, ObjectID: objectID, ContextRef: ref, Summary: result.Summary, Savings: sum, Signals: result.Signals, CompressionVersion: result.Version, ContentHash: obj.ContentHash, ConsoleURL: strings.TrimSuffix(s.cfg.ConsoleURL, "/") + "/sessions/" + sessionID}
 	resp.Redactions.Count = obj.RedactionCount
 	resp.Redactions.Types = types
