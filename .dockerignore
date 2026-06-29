@@ -1,0 +1,9 @@
+.git
+.github
+bin
+coverage.out
+dist
+docs
+examples
+**/*_test.go
+
