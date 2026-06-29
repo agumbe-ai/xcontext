@@ -3,10 +3,11 @@ package models
 import "time"
 
 type Scope struct {
-	TenantID           string `json:"tenantId"`
-	WorkspaceID        string `json:"workspaceId"`
-	UserID             string `json:"userId,omitempty"`
-	TrustedInterceptor bool   `json:"-"`
+	TenantID           string   `json:"tenantId"`
+	WorkspaceID        string   `json:"workspaceId"`
+	UserID             string   `json:"userId,omitempty"`
+	TrustedInterceptor bool     `json:"-"`
+	Scopes             []string `json:"-"`
 }
 
 type Session struct {
@@ -122,4 +123,18 @@ type UsageSummary struct {
 	EstimatedCostSaved   float64 `json:"estimatedCostSaved"`
 	RedactionCount       int     `json:"redactionCount"`
 	RetrievalCount       int     `json:"retrievalCount"`
+}
+
+type APIKey struct {
+	ID          string     `json:"id"`
+	TenantID    string     `json:"tenantId"`
+	WorkspaceID string     `json:"workspaceId"`
+	Name        string     `json:"name"`
+	KeyHash     string     `json:"-"`
+	Prefix      string     `json:"prefix"`
+	Scopes      []string   `json:"scopes"`
+	CreatedBy   string     `json:"createdBy"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	LastUsedAt  *time.Time `json:"lastUsedAt,omitempty"`
+	Status      string     `json:"status"`
 }

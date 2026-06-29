@@ -32,7 +32,7 @@ Storage and identity are interfaces. The in-memory adapters are development-only
 
 - A context ref is an identifier, never authorization.
 - Every lookup is constrained by authenticated tenant and workspace.
+- User JWTs without a workspace/app claim are scoped to the deterministic tenant namespace `tenant:<tenantId>`; they never fall into a shared default workspace.
 - Only a trusted interceptor can attest delivered savings.
 - Raw retrieval is audited and never returned by list/detail endpoints.
 - Production starts fail-closed when no identity resolver is configured.
-

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/agumbe-ai/xcontext/services/api/internal/models"
 )
@@ -11,6 +12,7 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Store interface {
+	CommitIngest(models.Session, bool, models.Object, []models.Redaction, models.UsageEvent) error
 	CreateSession(models.Session) error
 	UpdateSession(models.Session) error
 	GetSession(models.Scope, string) (models.Session, error)
@@ -25,6 +27,11 @@ type Store interface {
 	AddEvent(models.UsageEvent) error
 	ListEvents(models.Scope) []models.UsageEvent
 	Search(models.Scope, string, string) []models.Object
+	CreateAPIKey(models.APIKey) error
+	GetAPIKeyByHash(string) (models.APIKey, error)
+	ListAPIKeys(models.Scope) []models.APIKey
+	RevokeAPIKey(models.Scope, string) error
+	TouchAPIKey(string, time.Time) error
 }
 
 type Memory struct {
@@ -33,10 +40,26 @@ type Memory struct {
 	objects    map[string]models.Object
 	redactions []models.Redaction
 	events     []models.UsageEvent
+	apiKeys    map[string]models.APIKey
 }
 
 func NewMemory() *Memory {
-	return &Memory{sessions: map[string]models.Session{}, objects: map[string]models.Object{}}
+	return &Memory{sessions: map[string]models.Session{}, objects: map[string]models.Object{}, apiKeys: map[string]models.APIKey{}}
+}
+func (m *Memory) CommitIngest(session models.Session, isNew bool, obj models.Object, reds []models.Redaction, event models.UsageEvent) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !isNew {
+		current, ok := m.sessions[session.ID]
+		if !ok || current.TenantID != session.TenantID || current.WorkspaceID != session.WorkspaceID {
+			return ErrNotFound
+		}
+	}
+	m.sessions[session.ID] = session
+	m.objects[obj.ID] = obj
+	m.redactions = append(m.redactions, reds...)
+	m.events = append(m.events, event)
+	return nil
 }
 func scoped(scope models.Scope, tenant, workspace string) bool {
 	return scope.TenantID == tenant && (scope.WorkspaceID == "" || scope.WorkspaceID == workspace)
@@ -149,4 +172,55 @@ func (m *Memory) Search(s models.Scope, session, q string) []models.Object {
 		}
 	}
 	return out
+}
+
+func (m *Memory) CreateAPIKey(v models.APIKey) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.apiKeys[v.ID] = v
+	return nil
+}
+func (m *Memory) GetAPIKeyByHash(hash string) (models.APIKey, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, v := range m.apiKeys {
+		if v.KeyHash == hash && v.Status == "active" {
+			return v, nil
+		}
+	}
+	return models.APIKey{}, ErrNotFound
+}
+func (m *Memory) ListAPIKeys(s models.Scope) []models.APIKey {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	var out []models.APIKey
+	for _, v := range m.apiKeys {
+		if scoped(s, v.TenantID, v.WorkspaceID) {
+			v.KeyHash = ""
+			out = append(out, v)
+		}
+	}
+	return out
+}
+func (m *Memory) RevokeAPIKey(s models.Scope, id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	v, ok := m.apiKeys[id]
+	if !ok || !scoped(s, v.TenantID, v.WorkspaceID) {
+		return ErrNotFound
+	}
+	v.Status = "revoked"
+	m.apiKeys[id] = v
+	return nil
+}
+func (m *Memory) TouchAPIKey(id string, at time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	v, ok := m.apiKeys[id]
+	if !ok {
+		return ErrNotFound
+	}
+	v.LastUsedAt = &at
+	m.apiKeys[id] = v
+	return nil
 }
