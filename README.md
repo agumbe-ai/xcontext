@@ -2,7 +2,7 @@
 
 xcontext is the context control plane for AI agents. It captures large artifacts before they reach a model, redacts secrets, returns a compact representation with provenance, preserves retrievable source material, and distinguishes potential compression from verified delivered savings.
 
-> Status: active development. The current service implements the secure ingest/retrieval vertical and an in-memory development store. Do not use the in-memory store for production.
+> Status: active development. The service supports PostgreSQL-backed cloud deployments; `agumbe-ctl` also provides a separate no-key local mode under `~/.agumbe/xcontext`.
 
 ## Run locally
 
@@ -27,8 +27,8 @@ curl -sS http://localhost:8080/xcontext/v1/objects \
 ## Product surfaces
 
 - API/control plane: this repository.
-- CLI and MCP entry point: `agumbe-ctl xcontext` (integration in progress).
-- Console: shared Agumbe console under `/xcontext` (integration in progress).
+- CLI and MCP entry point: `agumbe-ctl xcontext`, with local, cloud/team, and CI modes.
+- Console: shared Agumbe console under `/xcontext` for cloud/team visibility.
 - Gateway: remains an independent product and service.
 
 See [architecture](docs/architecture.md), [security](SECURITY.md), and [roadmap](docs/roadmap.md).
