@@ -107,17 +107,26 @@ func (StackTrace) Compress(text string, max int) Result {
 	lines := strings.Split(clean(text), "\n")
 	var kept []string
 	var signals []models.Signal
+	seen := map[string]int{}
+	repeated := 0
 	for i, l := range lines {
 		t := strings.TrimSpace(l)
 		if t == "" {
 			continue
 		}
 		if len(kept) < 12 && (i == 0 || strings.HasPrefix(t, "at ") || strings.Contains(t, ".go:") || strings.Contains(t, ".py:")) {
+			if seen[t] > 0 {
+				repeated++
+				seen[t]++
+				continue
+			}
+			seen[t] = 1
 			kept = append(kept, t)
 			signals = append(signals, models.Signal{Type: "stack_frame", Text: t, SourceRange: models.SourceRange{StartLine: i + 1, EndLine: i + 1}})
 		}
 	}
-	return Result{Summary: limit(fmt.Sprintf("Stack trace summary (%d lines, top frames):\n- %s", len(lines), strings.Join(kept, "\n- ")), max), Signals: signals, Version: "stacktrace-v1"}
+	summary := fmt.Sprintf("Stack trace summary (%d lines, %d repeated frames collapsed):\n- %s", len(lines), repeated, strings.Join(kept, "\n- "))
+	return Result{Summary: limit(summary, max), Signals: signals, Version: "stacktrace-v2"}
 }
 
 type JSON struct{}

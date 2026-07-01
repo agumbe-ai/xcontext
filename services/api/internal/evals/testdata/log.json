@@ -1,0 +1,1 @@
+{"contentType":"test_output","text":"PASS TestCreate\nPASS TestRead\nPASS TestUpdate\nPASS TestDelete\nPASS TestCreate\nPASS TestRead\nPASS TestUpdate\nPASS TestDelete\nERROR ProviderRouteNotFoundError at routeResolver.resolveDefaultProvider\nexit code 1","mustContain":["ProviderRouteNotFoundError"],"minimumReductionPercent":20,"expectedRedactions":0}

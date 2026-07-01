@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/agumbe-ai/xcontext/services/api/internal/auth"
 	"github.com/agumbe-ai/xcontext/services/api/internal/models"
 	"github.com/agumbe-ai/xcontext/services/api/internal/service"
 	"github.com/agumbe-ai/xcontext/services/api/internal/store"
@@ -74,6 +75,13 @@ func (a *Router) scope(w http.ResponseWriter, r *http.Request) (models.Scope, bo
 	}
 	return s, true
 }
+func permit(w http.ResponseWriter, s models.Scope, permission string) bool {
+	if !auth.Permits(s, permission) {
+		fail(w, 403, "insufficient scope")
+		return false
+	}
+	return true
+}
 func (a *Router) serve(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/healthz" {
 		write(w, 200, map[string]string{"status": "ok"})
@@ -90,6 +98,9 @@ func (a *Router) serve(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case r.Method == "POST" && path == "/objects":
+		if !permit(w, sc, "ingest") {
+			return
+		}
 		var req service.IngestRequest
 		if !decode(w, r, &req) {
 			return
@@ -101,8 +112,14 @@ func (a *Router) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		write(w, 201, v)
 	case r.Method == "GET" && path == "/objects":
+		if !permit(w, sc, "read") {
+			return
+		}
 		write(w, 200, map[string]any{"items": a.svc.Objects(sc)})
 	case r.Method == "GET" && strings.HasPrefix(path, "/objects/"):
+		if !permit(w, sc, "read") {
+			return
+		}
 		v, e := a.svc.Object(sc, strings.TrimPrefix(path, "/objects/"))
 		if e != nil {
 			fail(w, 404, "not found")
@@ -110,8 +127,14 @@ func (a *Router) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		write(w, 200, v)
 	case r.Method == "GET" && path == "/sessions":
+		if !permit(w, sc, "read") {
+			return
+		}
 		write(w, 200, map[string]any{"items": a.svc.Sessions(sc)})
 	case r.Method == "GET" && strings.HasPrefix(path, "/sessions/"):
+		if !permit(w, sc, "read") {
+			return
+		}
 		v, o, red, e := a.svc.Session(sc, strings.TrimPrefix(path, "/sessions/"))
 		if e != nil {
 			fail(w, 404, "not found")
@@ -119,10 +142,19 @@ func (a *Router) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		write(w, 200, map[string]any{"session": v, "objects": o, "redactions": red})
 	case r.Method == "GET" && path == "/usage/summary":
+		if !permit(w, sc, "read") {
+			return
+		}
 		write(w, 200, a.svc.Usage(sc))
 	case r.Method == "GET" && path == "/redactions":
+		if !permit(w, sc, "read") {
+			return
+		}
 		write(w, 200, map[string]any{"items": a.svc.Redactions(sc)})
 	case r.Method == "POST" && path == "/retrieve":
+		if !permit(w, sc, "retrieve") {
+			return
+		}
 		var req struct {
 			ContextRef string `json:"contextRef"`
 		}
@@ -140,6 +172,9 @@ func (a *Router) serve(w http.ResponseWriter, r *http.Request) {
 		}
 		write(w, 200, map[string]any{"contextRef": req.ContextRef, "content": content, "retrievedCount": count})
 	case r.Method == "POST" && path == "/search":
+		if !permit(w, sc, "read") {
+			return
+		}
 		var req struct {
 			SessionID string `json:"sessionId"`
 			Query     string `json:"query"`
@@ -152,6 +187,38 @@ func (a *Router) serve(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		write(w, 200, map[string]any{"items": a.svc.Search(sc, req.SessionID, req.Query)})
+	case r.Method == "GET" && path == "/api-keys":
+		if !permit(w, sc, "admin") {
+			return
+		}
+		write(w, 200, map[string]any{"items": a.svc.APIKeys(sc)})
+	case r.Method == "POST" && path == "/api-keys":
+		if !permit(w, sc, "admin") {
+			return
+		}
+		var req struct {
+			Name        string   `json:"name"`
+			Environment string   `json:"environment"`
+			Scopes      []string `json:"scopes"`
+		}
+		if !decode(w, r, &req) {
+			return
+		}
+		v, e := a.svc.CreateAPIKey(sc, req.Name, req.Environment, req.Scopes)
+		if e != nil {
+			fail(w, 400, e.Error())
+			return
+		}
+		write(w, 201, v)
+	case r.Method == "DELETE" && strings.HasPrefix(path, "/api-keys/"):
+		if !permit(w, sc, "admin") {
+			return
+		}
+		if e := a.svc.RevokeAPIKey(sc, strings.TrimPrefix(path, "/api-keys/")); e != nil {
+			fail(w, 404, "not found")
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
 	default:
 		fail(w, 404, "not found")
 	}
