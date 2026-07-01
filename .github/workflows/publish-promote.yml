@@ -20,7 +20,7 @@ jobs:
       overlay: ${{ steps.target.outputs.overlay }}
       tag: ${{ steps.target.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: target
         shell: bash
         run: |
@@ -62,7 +62,7 @@ jobs:
     needs: publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: agumbe-ai/manifests-index
           ref: develop
