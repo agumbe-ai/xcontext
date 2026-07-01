@@ -15,6 +15,11 @@ import (
 
 type Postgres struct{ pool *pgxpool.Pool }
 
+// migrationAdvisoryLockID is a stable, application-specific PostgreSQL lock key
+// (the ASCII bytes for "XCONTEXT"). It serializes schema migration across
+// replicas that start at the same time during a deployment.
+const migrationAdvisoryLockID int64 = 0x58434F4E54455854
+
 // ResetForTest clears product tables in an isolated integration-test database.
 func (p *Postgres) ResetForTest(ctx context.Context) error {
 	_, err := p.pool.Exec(ctx, `TRUNCATE context_usage_events,context_redactions,context_objects,context_sessions,context_api_keys CASCADE`)
@@ -72,6 +77,21 @@ func OpenPostgres(ctx context.Context, url string) (*Postgres, error) {
 }
 func (p *Postgres) Close() { p.pool.Close() }
 func (p *Postgres) Migrate(ctx context.Context) error {
+	conn, e := p.pool.Acquire(ctx)
+	if e != nil {
+		return fmt.Errorf("acquire migration connection: %w", e)
+	}
+	defer conn.Release()
+
+	if _, e = conn.Exec(ctx, `SELECT pg_advisory_lock($1)`, migrationAdvisoryLockID); e != nil {
+		return fmt.Errorf("acquire migration lock: %w", e)
+	}
+	defer func() {
+		// Use a fresh context so cancellation of the caller cannot leave the
+		// session-level lock held while this pooled connection is released.
+		_, _ = conn.Exec(context.Background(), `SELECT pg_advisory_unlock($1)`, migrationAdvisoryLockID)
+	}()
+
 	entries, e := migrations.Files.ReadDir(".")
 	if e != nil {
 		return e
@@ -81,7 +101,7 @@ func (p *Postgres) Migrate(ctx context.Context) error {
 		if e != nil {
 			return e
 		}
-		if _, e = p.pool.Exec(ctx, string(b)); e != nil {
+		if _, e = conn.Exec(ctx, string(b)); e != nil {
 			return fmt.Errorf("migration %s: %w", v.Name(), e)
 		}
 	}
