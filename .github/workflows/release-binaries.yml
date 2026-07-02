@@ -16,8 +16,8 @@ jobs:
           - { os: windows, arch: amd64, ext: .exe }
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -27,6 +27,6 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           CGO_ENABLED: "0"
         run: go build -trimpath -ldflags="-s -w" -o xcontext-mcp-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }} ./services/mcp/cmd/xcontext-mcp
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: xcontext-mcp-*
