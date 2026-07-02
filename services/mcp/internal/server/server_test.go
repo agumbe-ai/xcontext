@@ -31,6 +31,9 @@ func TestExecuteUsesArgvAndAttestsDelivery(t *testing.T) {
 	if !received.DeliveryVerified {
 		t.Fatal("execution was not attested")
 	}
+	if received.Source != "command:printf" {
+		t.Fatalf("unsafe command provenance: %q", received.Source)
+	}
 	if received.Text != "literal; echo not-a-shell" {
 		t.Fatalf("shell syntax was interpreted: %q", received.Text)
 	}
