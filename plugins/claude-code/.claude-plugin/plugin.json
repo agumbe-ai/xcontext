@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "xcontext",
+  "displayName": "XContext",
+  "version": "0.1.0",
+  "description": "Reduce, redact, preserve, and retrieve large AI-agent context through XContext.",
+  "author": {
+    "name": "Agumbe AI",
+    "url": "https://github.com/agumbe-ai"
+  },
+  "homepage": "https://github.com/agumbe-ai/xcontext",
+  "repository": "https://github.com/agumbe-ai/xcontext",
+  "license": "Apache-2.0",
+  "keywords": ["context", "mcp", "redaction", "claude-code", "agents"],
+  "mcpServers": "./.mcp.json",
+  "skills": "./skills/"
+}

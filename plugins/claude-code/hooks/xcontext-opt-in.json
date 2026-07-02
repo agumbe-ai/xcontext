@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "mcp_tool",
+            "server": "xcontext",
+            "tool": "xcontext_ingest",
+            "input": {
+              "text": "${tool_response}",
+              "content_type": "log",
+              "source": "claude-code-bash"
+            },
+            "timeout": 30,
+            "statusMessage": "Preserving Bash output with XContext"
+          }
+        ]
+      }
+    ]
+  }
+}

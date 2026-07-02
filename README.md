@@ -91,12 +91,15 @@ agumbe-ctl xcontext mcp --local
 
 XContext exposes these tools:
 
+- `xcontext_execute` — run an argv array without a shell and return a protected receipt.
 - `xcontext_ingest` — redact, summarize, and store context.
 - `xcontext_search` — search stored summaries and protected context.
 - `xcontext_retrieve` — retrieve context by `ctx://` reference.
 - `xcontext_stats` — inspect object, redaction, retrieval, and token metrics.
 
-Codex setup is automated through `agumbe-ctl xcontext init --codex`. Other MCP clients can invoke `agumbe-ctl xcontext mcp` through their standard stdio MCP configuration.
+Codex setup is automated through `agumbe-ctl xcontext init --codex`. Claude Code setup is automated through `agumbe-ctl xcontext init --claude-code`; an installable Claude Code plugin with skills and commands is available in [`plugins/claude-code`](plugins/claude-code). See the [Claude Code integration guide](docs/claude-code.md).
+
+Install the public Claude Code plugin marketplace with `/plugin marketplace add agumbe-ai/xcontext`, then `/plugin install xcontext@agumbe`.
 
 The standalone `xcontext-mcp` service also supports intercepted command execution. `xcontext_execute` accepts an argv array and never invokes a shell; full output is ingested while the agent receives a compact summary and context reference.
 
@@ -139,6 +142,7 @@ Production requires PostgreSQL and an Agumbe-compatible HS256 JWT secret. Startu
 - Hosted API: `https://api.agumbe.ai/xcontext/v1`
 - CLI and MCP client: `agumbe-ctl xcontext`
 - Architecture: [docs/architecture.md](docs/architecture.md)
+- Claude Code integration: [docs/claude-code.md](docs/claude-code.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
 
