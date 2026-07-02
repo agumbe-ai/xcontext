@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -132,7 +133,7 @@ func (s *Server) call(ctx context.Context, name string, args json.RawMessage) (s
 		}
 		source := a.Source
 		if source == "" {
-			source = strings.Join(a.Argv, " ")
+			source = "command:" + filepath.Base(a.Argv[0])
 		}
 		kind := a.ContentType
 		if kind == "" {

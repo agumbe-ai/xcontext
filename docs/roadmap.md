@@ -10,8 +10,9 @@
 ## Agent execution path
 
 - MCP tools: execute, ingest, fetch, search, retrieve, stats, doctor, purge.
-- Provider-neutral local engine and MCP contract, with Codex as the first configuration adapter.
-- Claude Code, Gemini CLI, Cursor, VS Code, and generic MCP installation and routing adapters.
+- Provider-neutral local engine and MCP contract, with Codex and Claude Code configuration adapters.
+- Claude Code plugin with MCP, skills, commands, and opt-in hook guidance.
+- Gemini CLI, Cursor, VS Code, and generic MCP installation and routing adapters.
 - Local and hybrid agents with raw data residency.
 - Delivered-savings attestation issued by trusted clients, not request input.
 

@@ -17,6 +17,8 @@ jobs:
       - run: test -z "$(gofmt -l services)"
       - run: go vet ./...
       - run: go test -race -coverprofile=coverage.out ./...
+      - name: Validate Claude Code plugin structure
+        run: ./scripts/validate-claude-plugin.sh
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
@@ -57,4 +59,3 @@ jobs:
       - run: go test -run TestPostgresProductFlow -v ./services/api/internal/store
         env:
           XCONTEXT_TEST_DATABASE_URL: postgres://xcontext:xcontext@127.0.0.1:5432/xcontext?sslmode=disable
-
