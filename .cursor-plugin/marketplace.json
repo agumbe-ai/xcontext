@@ -1,0 +1,16 @@
+{
+  "name": "agumbe",
+  "owner": {
+    "name": "Agumbe AI"
+  },
+  "description": "Official Agumbe AI plugins for Cursor",
+  "plugins": [
+    {
+      "name": "xcontext",
+      "source": "./plugins/cursor",
+      "description": "Reduce, redact, preserve, and retrieve large AI-agent context through XContext.",
+      "category": "productivity",
+      "tags": ["context", "mcp", "redaction", "agents"]
+    }
+  ]
+}
