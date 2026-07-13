@@ -97,9 +97,16 @@ XContext exposes these tools:
 - `xcontext_retrieve` — retrieve context by `ctx://` reference.
 - `xcontext_stats` — inspect object, redaction, retrieval, and token metrics.
 
-Codex setup is automated through `agumbe-ctl xcontext init --codex`. Claude Code setup is automated through `agumbe-ctl xcontext init --claude-code`; an installable Claude Code plugin with skills and commands is available in [`plugins/claude-code`](plugins/claude-code). See the [Claude Code integration guide](docs/claude-code.md).
+Codex setup is automated through `agumbe-ctl xcontext init --codex`. Claude Code setup is automated through `agumbe-ctl xcontext init --claude-code`; an installable Claude Code plugin with skills and commands is available in [`plugins/claude-code`](plugins/claude-code). Cursor is supported through a marketplace-ready plugin in [`plugins/cursor`](plugins/cursor). See the [Claude Code integration guide](docs/claude-code.md) and [Cursor integration guide](docs/cursor.md).
 
 Install the public Claude Code plugin marketplace with `/plugin marketplace add agumbe-ai/xcontext`, then `/plugin install xcontext@agumbe`.
+
+For Cursor marketplace review, symlink the local plugin into Cursor:
+
+```bash
+mkdir -p ~/.cursor/plugins/local
+ln -s "$(pwd)/plugins/cursor" ~/.cursor/plugins/local/xcontext
+```
 
 The standalone `xcontext-mcp` service also supports intercepted command execution. `xcontext_execute` accepts an argv array and never invokes a shell; full output is ingested while the agent receives a compact summary and context reference.
 
@@ -143,6 +150,7 @@ Production requires PostgreSQL and an Agumbe-compatible HS256 JWT secret. Startu
 - CLI and MCP client: `agumbe-ctl xcontext`
 - Architecture: [docs/architecture.md](docs/architecture.md)
 - Claude Code integration: [docs/claude-code.md](docs/claude-code.md)
+- Cursor integration: [docs/cursor.md](docs/cursor.md)
 - Security policy: [SECURITY.md](SECURITY.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
 

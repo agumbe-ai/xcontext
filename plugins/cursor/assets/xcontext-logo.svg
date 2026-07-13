@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">XContext logo</title>
+  <desc id="desc">Interlocking context brackets around a protected center.</desc>
+  <rect width="256" height="256" rx="48" fill="#101828"/>
+  <path d="M78 70 38 128l40 58" fill="none" stroke="#66E3FF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M178 70 218 128l-40 58" fill="none" stroke="#9DFF7A" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M106 82h44l-44 92h44" fill="none" stroke="#F7F8FA" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="128" cy="128" r="18" fill="#FFCF5A"/>
+</svg>

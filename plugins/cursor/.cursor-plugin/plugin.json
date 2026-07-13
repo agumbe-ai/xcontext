@@ -1,0 +1,18 @@
+{
+  "name": "xcontext",
+  "description": "Reduce, redact, preserve, and retrieve large AI-agent context through XContext.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Agumbe AI",
+    "url": "https://github.com/agumbe-ai"
+  },
+  "homepage": "https://github.com/agumbe-ai/xcontext",
+  "repository": "https://github.com/agumbe-ai/xcontext",
+  "license": "Apache-2.0",
+  "keywords": ["context", "mcp", "redaction", "cursor", "agents"],
+  "category": "productivity",
+  "logo": "assets/xcontext-logo.svg",
+  "mcpServers": "mcp.json",
+  "skills": "skills/",
+  "commands": "commands/"
+}
