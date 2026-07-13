@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "xcontext": {
+      "command": "agumbe-ctl",
+      "args": ["xcontext", "mcp", "--local"],
+      "env": {
+        "AGUMBE_XCONTEXT_API_URL": "https://api.agumbe.ai/xcontext/v1"
+      }
+    }
+  }
+}

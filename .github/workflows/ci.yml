@@ -19,6 +19,8 @@ jobs:
       - run: go test -race -coverprofile=coverage.out ./...
       - name: Validate Claude Code plugin structure
         run: ./scripts/validate-claude-plugin.sh
+      - name: Validate Cursor plugin structure
+        run: ./scripts/validate-cursor-plugin.sh
       - uses: actions/upload-artifact@v7
         with:
           name: coverage

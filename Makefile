@@ -1,4 +1,4 @@
-.PHONY: build run test test-race fmt vet docker-build
+.PHONY: build run test test-race fmt vet docker-build validate-plugins
 build:
 	go build -o bin/xcontext ./services/api/cmd/xcontext
 run:
@@ -13,4 +13,6 @@ vet:
 	go vet ./...
 docker-build:
 	docker build -t xcontext:local .
-
+validate-plugins:
+	./scripts/validate-claude-plugin.sh
+	./scripts/validate-cursor-plugin.sh
